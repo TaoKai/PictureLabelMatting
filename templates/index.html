@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Picture Matting</title>
+    <script type="text/javascript">
+        var post_button = null
+        var pen_select = document.getElementById("pen_type_select")
+        var pen_type = 0
+        var fill_colors = {
+            0:'rgba(255, 0, 0, 0.2)',
+            1:'rgba(0, 0, 255, 0.2)'
+        }
+        var stroke_colors = {
+            0:'red',
+            1:'blue'
+        }
+        var points = new Array()
+        var canvas = document.getElementById('tutorial');
+        var offset = 0;
+        var has_added = false
+        var img = new Image()
+        img.src = "{{image}}"
+        var heat_maps = new Array()
+        function march() {
+            if(post_button==null){
+                post_button = document.getElementById("post_button")
+            }
+            if(canvas==null){
+                canvas = document.getElementById('tutorial');
+            }
+            if(pen_select==null){
+                pen_select = document.getElementById("pen_type_select")
+            }
+            if(canvas && !has_added && pen_select && post_button){
+                has_added = true
+                canvas.addEventListener("mousemove", function(e){
+                    rect = canvas.getBoundingClientRect()
+                    const p = {
+                        x: e.clientX-rect.x,
+                        y: e.clientY-rect.y,
+                    }
+                    i = points.length
+                    if(i>1){
+                        points[i-1] = p
+                    }
+                });
+                canvas.addEventListener("mouseup", function(e){
+                    rect = canvas.getBoundingClientRect()
+                    const p = {
+                        x: e.clientX-rect.x,
+                        y: e.clientY-rect.y,
+                    }
+                    i = points.length
+                    if(points.length>2){
+                        p0 = points[0]
+                        d = dist(p0, p)
+                        if(d<4){
+                            p.x = p0.x
+                            p.y = p0.y
+                            points[i] = p
+                            j = heat_maps.length
+                            heat_maps[j] = {
+                                "points":points,
+                                "pen_type":pen_type
+                            }
+                            points = new Array()
+                        }else{
+                            points[i] = p
+                            points[i+1] = p
+                        }
+                    }else{
+                        points[i] = p
+                        points[i+1] = p
+                    }
+                });
+                canvas.addEventListener("keyup", function(e){
+                    key = e.keyCode
+                    if(key==88 & points.length>1){
+                        points.splice(points.length-2, 2)
+                    }else if(key==88 & points.length==0 & heat_maps.length>0){
+                        ind = heat_maps.length-1
+                        points = heat_maps[ind]["points"]
+                        pen_type = heat_maps[ind]["pen_type"]
+                        points.splice(points.length-2, 2)
+                        heat_maps.splice(heat_maps.length-1, 1)
+                        pen_select.value = pen_type
+                    }
+                    if(points.length<=1){
+                        points = new Array()
+                    }
+                });
+                pen_select.addEventListener("change", function(){
+                    points = new Array()
+                    pen_type = pen_select.value
+                });
+                post_button.addEventListener("click", function(){
+                    if(confirm("是否确认提交?")){
+                        if(heat_maps.length>0){
+                            pic_data = {
+                                "src":img.src,
+                                "heat_maps":heat_maps,
+                            }
+                            heat_json = JSON.stringify(pic_data)
+                            var httpRequest = new XMLHttpRequest()
+                            httpRequest.open('POST', 'http://localhost:9092/get_points', true)
+                            httpRequest.setRequestHeader("Content-type","application/json")
+                            httpRequest.send(heat_json)
+                            httpRequest.onreadystatechange = function () {//请求后的回调接口，可将请求成功后要执行的程序写在其中
+                                if (httpRequest.readyState == 4 && httpRequest.status == 200) {//验证请求是否发送成功
+                                    var ret = httpRequest.responseText;//获取到服务端返回的数据
+                                    alert("提交成功")
+                                    img.src = ret
+                                    heat_maps = new Array()
+                                    points = new Array()
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            draw();
+            setTimeout(march, 20);
+        }
+
+        function draw_heat_map(ctx){
+            if(ctx==null){
+                return
+            }
+            if(heat_maps.length>0){
+                heat_maps.forEach(function(p_dic, i){
+                    pts = p_dic["points"]
+                    ptype = p_dic["pen_type"]
+                    ctx.fillStyle = fill_colors[ptype]
+                    ctx.strokeStyle = stroke_colors[ptype]
+                    ctx.beginPath()
+                    pts.forEach(function(p, j){
+                        if(j==0){
+                            ctx.moveTo(p.x, p.y)
+                        }else{
+                            ctx.lineTo(p.x, p.y)
+                        }
+                    });
+                    ctx.fill()
+                    ctx.stroke()
+                });
+            }
+        }
+
+        function dist(p0, p1){
+            dx = p0.x-p1.x
+            dy = p0.y-p1.y
+            d = Math.sqrt(Math.pow(dx, 2)+Math.pow(dy, 2))
+            return d
+        }
+
+        function draw() {
+            if (canvas != null) {
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                draw_heat_map(ctx)
+                ctx.fillStyle = fill_colors[pen_type]
+                ctx.strokeStyle = stroke_colors[pen_type]
+                if(points.length>0){
+                    ctx.beginPath()
+                    p0 = points[0]
+                    ctx.moveTo(p0.x, p0.y)
+                    points.forEach(function(p, i){
+                        if(i>0){
+                            ctx.lineTo(p.x, p.y)
+                        }
+                    });
+                    ctx.stroke()
+                }
+            }
+        }
+        march();
+    </script>
+    <style type="text/css">
+        .father_container {
+            margin: 0 auto;
+            width:1000px
+        }
+        .control_panel {
+            padding-left: 20px;
+            float: left;
+        }
+        .container {
+            float:left;
+            width: 800px;
+        }
+        canvas { border: 1px solid black;}
+    </style>
+  </head>
+  <body onload="march();">
+    <div class = "father_container">
+        <div class="container">
+            <canvas id="tutorial" width="800" height="1000" tabindex="0"></canvas>
+        </div>
+        <div class = "control_panel">
+            <div>
+                <label id="pen_type_label">抠图模式：</label>
+                <select id="pen_type_select">
+                    <option value=0>区域保留</option>
+                    <option value=1>区域剔除</option>
+                </select>
+            </div>
+            <div>
+                <button id="post_button" style="text-align: center; padding-left: 30px; padding-right: 30px; margin-top: 10px;">提交数据</button>
+            </div>
+        </div>
+    </div>
+  </body>
+</html>
