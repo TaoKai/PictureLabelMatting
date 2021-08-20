@@ -6,6 +6,8 @@ import random
 import sys
 import json
 import shutil
+import time
+from codecs import open
 
 def randColor():
     rc = random.randint(20, 150)
@@ -34,14 +36,19 @@ def upload():
 
 @app.route('/get_points', methods=['POST'])
 def get_points():
+    log_file = time.strftime("label_logs/LABEL%Y-%m-%d.log")
     if request.method=='POST':
         json_str = request.get_data()
         map_data = json.loads(json_str)
+        member_id = map_data["member_id"].strip()
         img_src = map_data["src"]
-        img_maps = map_data["heat_maps"]
+        img_maps = json.dumps(map_data["heat_maps"])
         img_name = img_src.split("/")[-1]
-        img_file = "./static/cache/data_pictures/"+img_name
-        print(img_file, img_maps)
+        img_file = "static/cache/data_pictures/"+img_name
+        json_line = member_id+"|"+img_file+"|"+img_maps+"\n"
+        f = open(log_file, "a", "utf-8")
+        f.write(json_line)
+        f.close()
         files = list_pictures("http://localhost:9092/")
         return files[0]
  

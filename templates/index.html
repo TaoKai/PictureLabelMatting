@@ -4,6 +4,7 @@
     <meta charset="utf-8"/>
     <title>Picture Matting</title>
     <script type="text/javascript">
+        var member_id_text = null
         var post_button = null
         var pen_select = document.getElementById("pen_type_select")
         var pen_type = 0
@@ -23,6 +24,9 @@
         img.src = "{{image}}"
         var heat_maps = new Array()
         function march() {
+            if(member_id_text==null){
+                member_id_text = document.getElementById("member_id_text")
+            }
             if(post_button==null){
                 post_button = document.getElementById("post_button")
             }
@@ -32,7 +36,7 @@
             if(pen_select==null){
                 pen_select = document.getElementById("pen_type_select")
             }
-            if(canvas && !has_added && pen_select && post_button){
+            if(canvas && !has_added && pen_select && post_button && member_id_text){
                 has_added = true
                 canvas.addEventListener("mousemove", function(e){
                     rect = canvas.getBoundingClientRect()
@@ -96,10 +100,13 @@
                 });
                 post_button.addEventListener("click", function(){
                     if(confirm("是否确认提交?")){
-                        if(heat_maps.length>0){
+                        member_id = member_id_text.value
+                        member_id = member_id.trim()
+                        if(heat_maps.length>0 && member_id!=""){
                             pic_data = {
                                 "src":img.src,
                                 "heat_maps":heat_maps,
+                                "member_id":member_id,
                             }
                             heat_json = JSON.stringify(pic_data)
                             var httpRequest = new XMLHttpRequest()
@@ -115,6 +122,8 @@
                                     points = new Array()
                                 }
                             }
+                        }else{
+                            alert("提交信息不完整！")
                         }
                     }
                 });
@@ -199,6 +208,10 @@
             <canvas id="tutorial" width="800" height="1000" tabindex="0"></canvas>
         </div>
         <div class = "control_panel">
+            <div style="margin-bottom: 10px; margin-top: 20px;">
+                <label>标注人员：</label>
+                <input id="member_id_text" type="text" style="width: 60px;">
+            </div>
             <div>
                 <label id="pen_type_label">抠图模式：</label>
                 <select id="pen_type_select">
@@ -207,7 +220,7 @@
                 </select>
             </div>
             <div>
-                <button id="post_button" style="text-align: center; padding-left: 30px; padding-right: 30px; margin-top: 10px;">提交数据</button>
+                <button id="post_button" style="text-align: center; width: 160px; margin-top: 20px;">提交数据</button>
             </div>
         </div>
     </div>
