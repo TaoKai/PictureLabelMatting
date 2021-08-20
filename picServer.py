@@ -8,6 +8,11 @@ import json
 import shutil
 import time
 from codecs import open
+from threading import Lock
+
+lock = Lock()
+ip_address = "http://localhost:9092/"
+file_cursor = 0
 
 def randColor():
     rc = random.randint(20, 150)
@@ -26,7 +31,7 @@ app = Flask(__name__)
 @app.route('/', methods=['POST', 'GET'])
 def upload():
     basepath = os.path.dirname(__file__) # 当前文件所在路径
-    files = list_pictures("http://localhost:9092/")
+    files = list_pictures(ip_address)
     dic = {
         'image': files[0]
     }
@@ -46,10 +51,12 @@ def get_points():
         img_name = img_src.split("/")[-1]
         img_file = "static/cache/data_pictures/"+img_name
         json_line = member_id+"|"+img_file+"|"+img_maps+"\n"
+        lock.acquire()
         f = open(log_file, "a", "utf-8")
         f.write(json_line)
         f.close()
-        files = list_pictures("http://localhost:9092/")
+        lock.release()
+        files = list_pictures(ip_address)
         return files[0]
  
 if __name__ == '__main__':
