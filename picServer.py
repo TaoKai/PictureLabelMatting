@@ -10,10 +10,6 @@ import time
 from codecs import open
 from threading import Lock
 
-lock = Lock()
-ip_address = "http://localhost:9092/"
-file_cursor = 0
-
 def randColor():
     rc = random.randint(20, 150)
     gc = random.randint(20, 150)
@@ -27,13 +23,35 @@ def list_pictures(url):
     random.shuffle(files)
     return files
 
+lock = Lock()
+ip_address = "http://localhost:9092/"
+file_cursor = 0
+total_picture_files = list_pictures(ip_address)
+labeled_pictures = []
+finish_pic = ip_address+"static/cache/util_pictures/finish.png"
+
+def get_image_file_by_cursor():
+    global file_cursor, total_picture_files
+    if file_cursor==len(total_picture_files):
+        file_cursor = 0
+        total_picture_files = list(set(total_picture_files)-set(labeled_pictures))
+        if len(total_picture_files)==0:
+            return None
+    img_file = total_picture_files[file_cursor]
+    file_cursor += 1
+    return img_file
+
 app = Flask(__name__)
 @app.route('/', methods=['POST', 'GET'])
 def upload():
     basepath = os.path.dirname(__file__) # 当前文件所在路径
-    files = list_pictures(ip_address)
+    lock.acquire()
+    img_file = get_image_file_by_cursor()
+    if img_file is None:
+        img_file = finish_pic
+    lock.release()
     dic = {
-        'image': files[0]
+        'image': img_file
     }
     if request.method == 'POST':
         pass
@@ -49,15 +67,18 @@ def get_points():
         img_src = map_data["src"]
         img_maps = json.dumps(map_data["heat_maps"])
         img_name = img_src.split("/")[-1]
-        img_file = "static/cache/data_pictures/"+img_name
-        json_line = member_id+"|"+img_file+"|"+img_maps+"\n"
+        img_file_local = "static/cache/data_pictures/"+img_name
+        json_line = member_id+"|"+img_file_local+"|"+img_maps+"\n"
         lock.acquire()
         f = open(log_file, "a", "utf-8")
         f.write(json_line)
         f.close()
+        labeled_pictures.append(img_src)
+        img_file = get_image_file_by_cursor()
+        if img_file is None:
+            img_file = finish_pic
         lock.release()
-        files = list_pictures(ip_address)
-        return files[0]
+        return img_file
  
 if __name__ == '__main__':
     app.run(debug=False, port=9092, host='0.0.0.0')

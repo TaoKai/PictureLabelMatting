@@ -4,7 +4,7 @@ from codecs import open
 import json
 
 def test():
-    data_str = open("label_logs/LABEL2021-08-20.log", "r", "utf-8").read().strip().split("\n")
+    data_str = open("label_logs/LABEL2021-08-23.log", "r", "utf-8").read().strip().split("\n")
     for line in data_str:
         props = line.split("|")
         mid = props[0].strip()
@@ -16,8 +16,9 @@ def test():
         img_alpha = alpha/255*img
         img_alpha = img_alpha.astype(np.uint8)
         img = np.concatenate([img, alpha, img_alpha], axis=1)
-        cv2.imshow("", img)
+        cv2.imshow(mid, img)
         cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 def draw_heats(poly_info, shp):
     alpha = np.zeros((1000,800,3), dtype=np.uint8)
