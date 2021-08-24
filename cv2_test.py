@@ -4,6 +4,8 @@ from codecs import open
 import json
 import os, sys
 
+from numpy.lib.polynomial import poly
+
 def test():
     data_str = open("label_logs/LABEL2021-08-23.log", "r", "utf-8").read().strip().split("\n")
     for line in data_str:
@@ -25,9 +27,15 @@ def test():
 def draw_heats(poly_info, shp):
     alpha = np.zeros((1000,800,3), dtype=np.uint8)
     for pi in poly_info:
-        points = np.array(pi[0], dtype=np.int32)
-        pen = (1-pi[1])*255
-        cv2.fillPoly(alpha, [points], (pen,pen,pen))
+        if pi[1]==0:
+            points = np.array(pi[0], dtype=np.int32)
+            pen = (1-pi[1])*255
+            cv2.fillPoly(alpha, [points], (pen,pen,pen))
+    for pi in poly_info:
+        if pi[1]==1:
+            points = np.array(pi[0], dtype=np.int32)
+            pen = (1-pi[1])*255
+            cv2.fillPoly(alpha, [points], (pen,pen,pen))
     alpha = cv2.resize(alpha, (shp[1], shp[0]))
     return alpha
 
