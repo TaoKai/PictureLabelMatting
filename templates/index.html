@@ -7,6 +7,7 @@
         var member_id_text = null
         var post_button = null
         var pen_select = document.getElementById("pen_type_select")
+        var ip_address = "http://192.168.1.249:9092"
         var pen_type = 0
         var fill_colors = {
             0:'rgba(255, 0, 0, 0.2)',
@@ -110,7 +111,7 @@
                             }
                             heat_json = JSON.stringify(pic_data)
                             var httpRequest = new XMLHttpRequest()
-                            httpRequest.open('POST', 'http://localhost:9092/get_points', true)
+                            httpRequest.open('POST', ip_address+'/get_points', true)
                             httpRequest.setRequestHeader("Content-type","application/json")
                             httpRequest.send(heat_json)
                             httpRequest.onreadystatechange = function () {//请求后的回调接口，可将请求成功后要执行的程序写在其中
