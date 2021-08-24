@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 import os, sys
 import random
+import time
 
-base_dir = "D:/workspace/data/douyinvideo/"
-save_dir = "D:/workspace/data/douyin_extract/"
+base_dir = "../../data/douyinvideo/"
+save_dir = "./douyin_extract_frames/"
 
 def frame_random_extract():
     extract_num_single = 100
@@ -24,7 +25,7 @@ def frame_random_extract():
                     # cv2.imshow("", frame)
                     # cv2.waitKey(1)
                     indices.remove(i)
-                    sp = save_dir+str(vid)+"_"+str(i)+".jpg"
+                    sp = save_dir+time.strftime("%Y-%m-%d_")+str(vid)+"_"+str(i)+".jpg"
                     cv2.imwrite(sp, frame)
                     print("extract to", sp)
             else:
