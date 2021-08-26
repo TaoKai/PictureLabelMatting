@@ -24,7 +24,7 @@ def list_pictures(url):
     return files
 
 lock = Lock()
-ip_address = "http://192.168.1.249:9092/"
+ip_address = "http://localhost:9092/"
 file_cursor = 0
 total_picture_files = list_pictures(ip_address)
 labeled_pictures = []
@@ -51,7 +51,8 @@ def upload():
         img_file = finish_pic
     lock.release()
     dic = {
-        'image': img_file
+        'image': img_file,
+        'ip':ip_address
     }
     if request.method == 'POST':
         pass
